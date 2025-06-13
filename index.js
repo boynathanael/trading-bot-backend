@@ -12,7 +12,7 @@ const app = express();
 // --- Konfigurasi Penting ---
 const PORT = process.env.PORT || 3001;
 // URL Frontend Anda yang sudah di-deploy. Ganti jika berbeda.
-const FRONTEND_URL = 'https://trading-bot-simulator-t2kz.vercel.app'; 
+const FRONTEND_URL = 'https://trading-bot-frontend-jet.vercel.app/'; 
 
 // --- Middleware ---
 // Konfigurasi CORS agar hanya frontend Anda yang diizinkan
