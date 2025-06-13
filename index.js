@@ -1,16 +1,19 @@
 // =================================================================
-// TRADING BOT SIMULATOR - BACKEND (VERSI FINAL REVISI 2 - HAIL MARY)
+// TRADING BOT SIMULATOR - BACKEND (VERSI UNTUK RENDER.COM)
 // =================================================================
+
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const Binance = require('node-binance-api');
 
-// --- Inisialisasi Aplikasi Express ---
 const app = express();
 
-// --- Konfigurasi ---
-const FRONTEND_URL = 'https://trading-bot-frontend-jet.vercel.app';
+// --- Konfigurasi Penting ---
+// Render akan menyediakan process.env.PORT secara otomatis
+const PORT = process.env.PORT || 3001; 
+// URL Frontend Anda yang sudah di-deploy
+const FRONTEND_URL = 'https://trading-bot-frontend-jet.vercel.app'; 
 
 // --- Middleware ---
 app.use(cors({ origin: FRONTEND_URL }));
@@ -21,33 +24,53 @@ let activeConfig = null;
 let orderHistory = [];
 
 // =================================================================
-// ENDPOINTS API (SAMA SEPERTI SEBELUMNYA)
+// ENDPOINTS API (Tidak ada perubahan di sini)
 // =================================================================
-app.get('/', (req, res) => res.status(200).send('Backend is alive!'));
+
+// Endpoint Tes
+app.get('/', (req, res) => {
+    res.status(200).send('Trading Bot Backend is alive and running!');
+});
+
+// Menyimpan konfigurasi
 app.post('/config', (req, res) => {
     activeConfig = req.body;
+    console.log('Konfigurasi disimpan:', activeConfig);
     res.status(200).json({ message: 'Konfigurasi berhasil disimpan' });
 });
-app.get('/config', (req, res) => res.status(200).json(activeConfig));
-app.get('/orders', (req, res) => res.status(200).json([...orderHistory].reverse()));
 
+// Mengambil konfigurasi
+app.get('/config', (req, res) => {
+    res.status(200).json(activeConfig);
+});
+
+// Menerima sinyal webhook
 app.post('/webhook', async (req, res) => {
-    // ... (SELURUH LOGIKA /webhook ANDA TETAP SAMA DI SINI) ...
-    // Salin-tempel seluruh blok app.post('/webhook', ...) Anda yang lama ke sini
     const signal = req.body;
-    if (!activeConfig) return res.status(400).send('Error: Konfigurasi belum diatur.');
+    console.log('Sinyal diterima:', signal);
+
+    if (!activeConfig) {
+        return res.status(400).send('Error: Konfigurasi belum diatur.');
+    }
+
     const isBuySignal = signal.plusDI > activeConfig.diPlusThreshold && signal.minusDI < activeConfig.diMinusThreshold && signal.adx > activeConfig.adxMinimum;
-    if (!isBuySignal) return res.status(200).send('Sinyal diterima, tidak memenuhi kriteria.');
-    
+
+    if (!isBuySignal) {
+        return res.status(200).send('Sinyal tidak memenuhi kriteria.');
+    }
+
+    console.log(`Sinyal BUY valid terdeteksi...`);
     try {
         const binance = new Binance().options({
             APIKEY: process.env.BINANCE_TESTNET_API_KEY,
             APISECRET: process.env.BINANCE_TESTNET_SECRET_KEY,
             test: true
         });
+
         const quantity = 0.001;
         await binance.futuresLeverage(activeConfig.symbol, activeConfig.leverage);
         const orderResponse = await binance.futuresMarketBuy(activeConfig.symbol, quantity);
+
         const entryPrice = parseFloat(orderResponse.price);
         const executedOrder = {
             symbol: activeConfig.symbol,
@@ -59,17 +82,27 @@ app.post('/webhook', async (req, res) => {
             timeframe: activeConfig.timeframe,
             timestamp: new Date().toISOString()
         };
+
         orderHistory.push(executedOrder);
         res.status(200).json({ message: 'Order berhasil dieksekusi!' });
+
     } catch (error) {
         const errorMessage = error.body ? JSON.parse(error.body).msg : "Gagal terhubung ke Binance.";
+        console.error('Gagal mengeksekusi order:', errorMessage);
         res.status(500).send(`Gagal mengeksekusi order: ${errorMessage}`);
     }
 });
 
+// Mengambil riwayat order
+app.get('/orders', (req, res) => {
+    res.status(200).json([...orderHistory].reverse());
+});
+
 // =================================================================
-// EKSPOR UNTUK VERCEL
+// LOGIKA STARTUP SERVER (VERSI UNTUK RENDER)
 // =================================================================
-// Ini akan mengeksekusi seluruh aplikasi sebagai satu fungsi.
-// Ini adalah cara paling 'native' untuk Vercel.
-module.exports = app;
+
+// Render lebih suka app.listen() yang sederhana.
+app.listen(PORT, () => {
+  console.log(`Backend server berjalan di port ${PORT}`);
+});
