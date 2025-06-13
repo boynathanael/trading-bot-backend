@@ -23,12 +23,6 @@ app.use(express.json());
 let activeConfig = null;
 let orderHistory = [];
 
-// --- Inisialisasi Klien Binance ---
-const binance = new Binance().options({
-    APIKEY: process.env.BINANCE_TESTNET_API_KEY,
-    APISECRET: process.env.BINANCE_TESTNET_SECRET_KEY,
-    test: true // Menggunakan Binance Testnet
-});
 
 // =================================================================
 // ENDPOINTS API
@@ -75,6 +69,12 @@ app.post('/webhook', async (req, res) => {
 
     console.log(`Sinyal BUY valid terdeteksi untuk ${activeConfig.symbol}! Mencoba eksekusi...`);
     try {
+        const binance = new Binance().options({
+            APIKEY: process.env.BINANCE_TESTNET_API_KEY,
+            APISECRET: process.env.BINANCE_TESTNET_SECRET_KEY,
+            test: true
+        });
+        
         const quantity = 0.001; // Jumlah order untuk demo
         await binance.futuresLeverage(activeConfig.symbol, activeConfig.leverage);
         const orderResponse = await binance.futuresMarketBuy(activeConfig.symbol, quantity);
