@@ -42,12 +42,9 @@ app.post('/config', (req, res) => {
 
 // Mengambil konfigurasi aktif
 app.get('/config', (req, res) => {
-    if (activeConfig) {
-        res.status(200).json(activeConfig);
-    } else {
-        // Jika belum ada config, kirim respons yang valid agar frontend tidak error
-        res.status(200).json(null);
-    }
+    // Selalu kirim 'activeConfig', bahkan jika nilainya null.
+    // Biarkan frontend yang memutuskan apa yang harus ditampilkan.
+    res.status(200).json(activeConfig);
 });
 
 // Menerima sinyal dan mengeksekusi order
@@ -74,7 +71,7 @@ app.post('/webhook', async (req, res) => {
             APISECRET: process.env.BINANCE_TESTNET_SECRET_KEY,
             test: true
         });
-        
+
         const quantity = 0.001; // Jumlah order untuk demo
         await binance.futuresLeverage(activeConfig.symbol, activeConfig.leverage);
         const orderResponse = await binance.futuresMarketBuy(activeConfig.symbol, quantity);
